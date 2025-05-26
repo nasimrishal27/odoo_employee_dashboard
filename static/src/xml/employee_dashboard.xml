@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="employee_dashboard.EmployeeDashboard" owl="1">
+        <div class="d-flex" style="min-height: 100vh;">
+
+            <!-- Sidebar styled to match top menu bar -->
+            <div style="width: 250px; background-color: #6f6391; color: white; padding: 30px 20px;">
+                <h3 style="font-weight: bold;">Dashboard</h3>
+                <ul style="list-style-type: none; padding: 0; margin-top: 30px;">
+                    <li style="padding: 10px 0;">
+                        <i class="fa fa-home mr-2"></i> Overview
+                    </li>
+                    <li style="padding: 10px 0;">
+                        <i class="fa fa-calendar-check-o mr-2"></i> Attendance
+                    </li>
+                    <li style="padding: 10px 0;">
+                        <i class="fa fa-plane mr-2"></i> Leaves
+                    </li>
+                    <li style="padding: 10px 0;">
+                        <i class="fa fa-tasks mr-2"></i> Tasks
+                    </li>
+                    <li style="padding: 10px 0;">
+                        <i class="fa fa-users mr-2"></i> Team
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Main Content -->
+            <div class="flex-grow-1 container-fluid" style="padding-top: 30px;">
+                <center>
+                    <h1 class="mb-4" style="font-weight: bold;">Employee Dashboard</h1>
+                </center>
+
+                <div class="row main-section justify-content-center" style="gap: 30px;">
+                    <!-- Attendance Tile -->
+                    <div class="col-12 col-sm-6 col-md-6 col-lg-5">
+                        <div class="card border rounded-4 text-center shadow-sm h-100" style="cursor: pointer;">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="icon-box" style="background-color: #ff4d94; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+                                        <i class="fa fa-calendar-check-o text-white" style="font-size: 30px;"></i>
+                                    </div>
+                                    <div class="text-start ps-3">
+                                        <div class="stat_count_attendance" id="my_attendance" style="font-size: 16px; font-weight: bold;">
+                                            <!-- Filled by JS -->
+                                        </div>
+                                        <div class="stat-head" style="font-size: 14px; color: #888;">My Attendance</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Leave Tile -->
+                    <div class="col-12 col-sm-6 col-md-6 col-lg-5">
+                        <div class="card border rounded-4 text-center shadow-sm h-100" style="cursor: pointer;">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="icon-box" style="background-color: #ff4d94; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+                                        <i class="fa fa-calendar-check-o text-white" style="font-size: 30px;"></i>
+                                    </div>
+                                    <div class="text-start ps-3">
+                                        <div class="stat_count_attendance" id="my_leaves" style="font-size: 16px; font-weight: bold;">
+                                            <!-- Filled by JS -->
+                                        </div>
+                                        <div class="stat-head" style="font-size: 14px; color: #888;">My Attendance</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>
