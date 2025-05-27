@@ -4,99 +4,234 @@
         <t t-call-assets="web.assets_frontend" t-js="true"/>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-        <!-- Full-height and scroll fix -->
-        <style>
-            html, body {
-                height: 100%;
-                margin: 0;
-                padding: 0;
-                overflow-y: auto !important;
-                background-color: #f8f9fa;
-            }
+        <!-- Main scrollable container -->
+        <div class="employee-dashboard-container" style="height: 100vh; overflow-y: auto; overflow-x: hidden;">
+            <div class="d-flex" style="min-height: 100vh;">
+                <!-- Main Content -->
+                <div class="flex-grow-1 container-fluid" style="padding: 30px 15px;">
+                    <!-- Loading State -->
+                    <div t-if="state.loading" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div class="mt-3">Loading dashboard data...</div>
+                    </div>
 
-            .dashboard-wrapper {
-                padding: 30px 15px;
-                min-height: 100%;
-                box-sizing: border-box;
-            }
-        </style>
+                    <!-- Dashboard Content -->
+                    <div t-else="">
+                        <center><h1 class="mb-4" style="font-weight: bold;">Employee Dashboard</h1></center>
 
-        <div class="dashboard-wrapper container-fluid">
-            <!-- Dashboard Title -->
-            <center><h1 class="mb-4" style="font-weight: bold;">Employee Dashboard</h1></center>
-
-            <div class="row justify-content-center" style="gap: 30px;">
-                <!-- Attendance Tile -->
-                <div class="col-12 col-sm-6 col-md-6 col-lg-5">
-                    <div class="card border rounded-4 text-center shadow-sm h-100" style="cursor: pointer;">
-                        <div class="card-body p-3">
-                            <center><h5 class="mb-4" style="font-weight: bold;">My Attendance</h5></center>
-                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
-                                <div class="d-flex align-items-center mb-3 mb-md-0">
-                                    <div class="icon-box" style="background-color: #ff4d94; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
-                                        <i class="fa fa-calendar-check-o text-white" style="font-size: 30px;"></i>
+                        <!-- Filter Section -->
+                        <div class="row justify-content-center mb-4">
+                            <div class="col-12 col-md-8 col-lg-10">
+                                <div class="card border rounded-4 shadow-sm">
+                                    <div class="card-body p-3">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-2">
+                                                <label class="form-label fw-bold mb-1">Filter By:</label>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <select class="form-select form-select-sm" id="filterType" t-on-change="onFilterTypeChange">
+                                                    <option value="type" selected="">Select Type....</option>
+                                                    <option value="days">Days</option>
+                                                    <option value="months">Months</option>
+                                                    <option value="years">Years</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3" id="dateFilterContainer">
+                                                <!-- Dynamic filter options will be populated here -->
+                                                <select class="form-select form-select-sm" id="dateFilter" t-on-change="onDateFilterChange">
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="row">
+                                                    <div class="col-6">
+                                                        <input type="date" class="form-control form-control-sm" id="startDate" t-on-change="onCustomDateChange" />
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <input type="date" class="form-control form-control-sm" id="endDate" t-on-change="onCustomDateChange" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button class="btn btn-primary btn-sm w-100" t-on-click="applyFilter">
+                                                    <i class="fa fa-filter"></i> Apply Filter
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="text-start ps-3">
-                                        <div class="stat_count_attendance" id="my_attendance" style="font-size: 16px; font-weight: bold;"></div>
-                                    </div>
-                                </div>
-                                <div style="max-width: 250px; max-height: 250px;">
-                                    <canvas id="attendanceChart" width="250" height="250"></canvas>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <!-- Leave Tile -->
-                <div class="col-12 col-sm-6 col-md-6 col-lg-5">
-                    <div class="card border rounded-4 text-center shadow-sm h-100" style="cursor: pointer;">
-                        <div class="card-body p-3">
-                            <center><h5 class="mb-4" style="font-weight: bold;">My Leaves</h5></center>
-                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
-                                <div class="d-flex align-items-center mb-3 mb-md-0">
-                                    <div class="icon-box" style="background-color: #ff4d94; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
-                                        <i class="fa fa-calendar-check-o text-white" style="font-size: 30px;"></i>
-                                    </div>
-                                    <div class="text-start ps-3">
-                                        <div class="stat_count_attendance" id="my_leaves" style="font-size: 16px; font-weight: bold;"></div>
+                        <div class="row main-section justify-content-center" style="gap: 30px;">
+                            <!-- Personal Information Tile -->
+                            <div class="col-12 col-sm-6 col-md-6 col-lg-5">
+                                <div class="card border rounded-4 text-center shadow-sm h-100" style="cursor: pointer;">
+                                    <div class="card-body p-3">
+                                        <center><h3 class="mb-4" style="font-weight: bold;">My Information</h3></center>
+                                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center mb-3 mb-md-0">
+<!--                                                <div class="icon-box" style="background-color: #ff4d94; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">-->
+<!--                                                    <i class="fa fa-id-card-o text-white" style="font-size: 30px;"></i>-->
+<!--                                                </div>-->
+                                                <div class="text-start ps-3">
+                                                    <div class="stat_count_attendance" id="my_information" style="font-size: 16px;"></div>
+                                                </div>
+                                            </div>
+                                            <div id="employeeImage" style="max-width: 200px; max-height: 200px;"></div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div style="max-width: 250px; max-height: 250px;">
-                                    <canvas id="leaveChart" width="250" height="250"></canvas>
+                            </div>
+
+                            <!-- Attendance Tile -->
+                            <div class="col-12 col-sm-6 col-md-6 col-lg-5">
+                                <div class="card border rounded-4 text-center shadow-sm h-100" style="cursor: pointer;">
+                                    <div class="card-body p-3">
+                                        <center><h3 class="mb-4" style="font-weight: bold;">My Attendance</h3></center>
+                                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center mb-3 mb-md-0">
+<!--                                                <div class="icon-box" style="background-color: #ff4d94; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">-->
+<!--                                                    <i class="fa fa-calendar-check-o text-white" style="font-size: 30px;"></i>-->
+<!--                                                </div>-->
+                                                <div class="text-start ps-3">
+                                                    <div class="stat_count_attendance" id="my_attendance" style="font-size: 16px;"></div>
+                                                </div>
+                                            </div>
+                                            <div style="max-width: 250px; max-height: 250px;">
+                                                <canvas id="attendanceChart" width="250" height="250"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Project Tile -->
+                            <div class="col-12 col-sm-6 col-md-6 col-lg-5">
+                                <div class="card border rounded-4 text-center shadow-sm h-100" style="cursor: pointer;">
+                                    <div class="card-body p-3">
+                                        <center><h3 class="mb-4" style="font-weight: bold;">My Projects</h3></center>
+
+                                        <div class="d-flex align-items-center">
+                                            <!-- Left Icon -->
+<!--                                            <div class="icon-box" style="background-color: #ff4d94; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">-->
+<!--                                                <i class="fa fa-puzzle-piece text-white" style="font-size: 30px;"></i>-->
+<!--                                            </div>-->
+
+                                            <!-- Info Grid (2 rows x 2 columns) -->
+                                            <div class="w-100">
+                                                <div class="row text-center mb-2">
+                                                    <!-- Total Projects -->
+                                                    <div class="col-6">
+                                                        <div class="rounded-3 p-2">
+                                                            <i class="fa fa-folder-open mb-1" style="font-size: 20px;"></i>
+                                                            <h4>Total Projects</h4>
+                                                            <div id="projectCount" style="font-size: 20px;">0</div>
+                                                        </div>
+                                                    </div>
+                                                    <!-- Total Tasks -->
+                                                    <div class="col-6">
+                                                        <div class="rounded-3 p-2">
+                                                            <i class="fa fa-tasks mb-1" style="font-size: 20px;"></i>
+                                                            <h4>Total Tasks</h4>
+                                                            <div id="taskCount" style="font-size: 20px;">0</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row text-center">
+                                                    <!-- Remaining Projects -->
+                                                    <div class="col-6">
+                                                        <div class="rounded-3 p-2">
+                                                            <i class="fa fa-hourglass-half mb-1" style="font-size: 20px;"></i>
+                                                            <h4>Remaining Projects</h4>
+                                                            <div id="remainingProjectCount" style="font-size: 20px;">0</div>
+                                                        </div>
+                                                    </div>
+                                                    <!-- Remaining Tasks -->
+                                                    <div class="col-6">
+                                                        <div class="rounded-3 p-2">
+                                                            <i class="fa fa-reorder mb-1" style="font-size: 20px;"></i>
+                                                            <h4>Remaining Tasks</h4>
+                                                            <div id="remainingTaskCount" style="font-size: 20px;">0</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+
+                            <!-- Leave Tile -->
+                            <div class="col-12 col-sm-6 col-md-6 col-lg-5">
+                                <div class="card border rounded-4 text-center shadow-sm h-100" style="cursor: pointer;">
+                                    <div class="card-body p-3">
+                                        <center><h3 class="mb-4" style="font-weight: bold;">My Leaves</h3></center>
+                                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center mb-3 mb-md-0">
+<!--                                                <div class="icon-box" style="background-color: #ff4d94; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">-->
+<!--                                                    <i class="fa fa-plane text-white" style="font-size: 30px;"></i>-->
+<!--                                                </div>-->
+                                                <div class="text-start ps-3">
+                                                    <div class="stat_count_attendance" id="my_leaves" style="font-size: 16px;"></div>
+                                                </div>
+                                            </div>
+                                            <div style="max-width: 250px; max-height: 250px;">
+                                                <canvas id="leaveChart" width="250" height="250"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Task Table -->
+                        <div class="row justify-content-center mt-5 mb-5">
+                            <div class="col-10">
+                                <div class="card border rounded-4 shadow-sm">
+                                    <div class="card-body">
+                                        <h5 class="mb-4 text-center" style="font-weight: bold;">My Tasks</h5>
+                                        <!-- Scrollable table wrapper -->
+                                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                            <table class="table table-borderless" id="projectsTable">
+                                                <thead class="sticky-top bg-white">
+                                                    <tr>
+                                                        <th style="border-top: none;">Project</th>
+                                                        <th style="border-top: none;">Task</th>
+                                                        <th style="border-top: none;">Deadline</th>
+                                                        <th style="border-top: none;">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="taskTableBody">
+                                                    <!-- JS will populate this -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Employee Hierarchy-->
+                        <div class="row justify-content-center mt-5 mb-5">
+                            <div class="col-10">
+                                <div class="card border rounded-4 shadow-sm">
+                                    <div class="card-body">
+                                        <h5 class="mb-4 text-center" style="font-weight: bold;">Employee Hierarchy</h5>
+                                        <div id="employeeHierarchyChart" style="width: 100%; height: 600px;"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Projects Table -->
-            <div class="row mt-5">
-                <div class="col-12">
-                    <div class="card border rounded-4 shadow-sm">
-                        <div class="card-body">
-                            <h5 class="mb-4 text-center" style="font-weight: bold;">My Projects</h5>
-                            <div class="table-responsive">
-                                <table class="table table-striped" id="projectsTable">
-                                    <thead>
-                                        <tr>
-                                            <th>Project</th>
-                                            <th>Task</th>
-                                            <th>Deadline</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="projectTableBody">
-                                        <!-- JS will populate this -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </t>
 </templates>
