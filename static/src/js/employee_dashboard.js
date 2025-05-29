@@ -4,10 +4,15 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { Component, useState, onMounted } from "@odoo/owl";
 
-class EmployeeDashboard extends Component {
+class Dashboard extends Component {
+    static template = "employee_dashboard.BaseDashboard";
+
     setup() {
         super.setup();
         this.orm = useService('orm');
+        this.action = useService("action");
+        this.chartInstances = {};
+
         this.state = useState({
             data: null,
             loading: true,
@@ -15,7 +20,8 @@ class EmployeeDashboard extends Component {
                 type: 'months',
                 value: 'current',
                 startDate: null,
-                endDate: null
+                endDate: null,
+                filterDate: null,
             }
         });
 
@@ -36,8 +42,10 @@ class EmployeeDashboard extends Component {
         setTimeout(() => {
             const startDateEl = document.getElementById('startDate');
             const endDateEl = document.getElementById('endDate');
+            const filterDateEl = document.getElementById('filterDate');
             if (startDateEl) startDateEl.value = this.state.filters.startDate;
             if (endDateEl) endDateEl.value = this.state.filters.endDate;
+            if (filterDateEl) filterDateEl.value = this.state.filters.filterDate;
         }, 100);
     }
 
@@ -76,10 +84,12 @@ class EmployeeDashboard extends Component {
                 filter_type: this.state.filters.type,
                 filter_value: this.state.filters.value,
                 start_date: this.state.filters.startDate,
-                end_date: this.state.filters.endDate
+                end_date: this.state.filters.endDate,
+                filter_date: this.state.filters.filterDate
             });
             this.state.data = result;
             this.state.loading = false;
+            this.state.is_manager = result.is_manager;
 
             await new Promise(resolve => setTimeout(resolve, 100));
             this._updateContent();
@@ -103,9 +113,13 @@ class EmployeeDashboard extends Component {
     onCustomDateChange() {
         const startDateEl = document.getElementById('startDate');
         const endDateEl = document.getElementById('endDate');
+        const filterDateEl = document.getElementById('filterDate');
         if (startDateEl && endDateEl) {
             this.state.filters.startDate = startDateEl.value;
             this.state.filters.endDate = endDateEl.value;
+        }
+        if (filterDateEl) {
+            this.state.filters.filterDate = filterDateEl.value;
         }
     }
 
@@ -228,140 +242,292 @@ class EmployeeDashboard extends Component {
 
     _updateContent() {
         if (!this.state.data) return;
-        const result = this.state.data;
-        const filterLabel = this._getFilterLabel();
 
-        const attendanceEl = document.getElementById('my_attendance');
-        if (attendanceEl) {
-            attendanceEl.innerHTML = `
-                <table>
-                <tr><td><strong>${filterLabel}:</strong></td> <td>${result.my_attendance.toFixed(2)} hrs</td></tr>
-                <tr><td><strong>Today:</strong></td> <td> ${result.hours_today.toFixed(2)} hrs</td></tr>
-                <tr><td><strong>Ongoing:</strong></td> <td> ${result.last_attendance_worked_hours.toFixed(2)} hrs</td></tr>
-                <tr><td><strong>Overtime:</strong></td> <td> ${result.total_overtime.toFixed(2)} hrs</td></tr>
-                <tr><td><strong>Total Days:</strong></td> <td> ${result.total_days_present} Days</td></tr>
-                </table>
-            `;
-            document.getElementById('employeeImage').innerHTML = `
-                <img src="data:image/png;base64,${result.personal_details.employee_image}" width="100%" height="100%"/>
-            `;
-        }
+        if (this.state.data.is_manager) {
+            // Update manager dashboard content
+            const result = this.state.data;
+            document.getElementById('manager_attendance_total').textContent = result.manager_attendance.total;
+            document.getElementById('manager_attendance_men').textContent = result.manager_attendance.men;
+            document.getElementById('manager_attendance_women').textContent = result.manager_attendance.women;
+            document.getElementById('manager_leave_total').textContent = result.manager_leaves.total;
+            document.getElementById('manager_leave_men').textContent = result.manager_leaves.men;
+            document.getElementById('manager_leave_women').textContent = result.manager_leaves.women;
+            document.getElementById('manager_total_projects').textContent = result.manager_project_count.total_projects;
+            document.getElementById('manager_total_tasks').textContent = result.manager_project_count.total_tasks;
+            document.getElementById('manager_remaining_projects').textContent = result.manager_project_count.remaining_projects;
+            document.getElementById('manager_remaining_tasks').textContent = result.manager_project_count.remaining_tasks;
 
-        const informationEl = document.getElementById('my_information');
-        if (informationEl) {
-            informationEl.innerHTML = `
-                <table>
-                <tr><td><strong>Name:</strong></td> <td> ${result.personal_details.employee_name}</td></tr>
-                <tr><td><strong>Email:</strong></td> <td> ${result.personal_details.employee_email}</td></tr>
-                <tr><td><strong>Phone:</strong></td> <td> ${result.personal_details.employee_phone}</td></tr>
-                <tr><td><strong>Department:</strong></td> <td> ${result.personal_details.employee_department}</td></tr>
-                <tr><td><strong>Job:</strong></td> <td> ${result.personal_details.employee_job}</td></tr>
-                </table>
-            `;
-        }
+            const projectBody = document.getElementById("managerTaskTableBody");
+            if (projectBody) {
+                projectBody.innerHTML = "";
+                result.manager_projects.forEach(task => {
+                    const row = document.createElement("tr");
+                    row.onclick = () => {
+                        this.action.doAction({
+                            type: 'ir.actions.act_window',
+                            name: 'Task',
+                            res_model: 'project.task',
+                            res_id: task.id,
+                            views: [
+                                [false, "form"],
+                            ],
+                        });
+                    };
+                    row.innerHTML = `
+                        <td>${task.task_name || '-'}</td>
+                        <td>${task.name || '-'}</td>
+                        <td>${task.deadline || '-'}</td>
+                        <td>${task.stage || '-'}</td>
+                        <td>${task.assignees || '-'}</td>
+                    `;
+                    projectBody.appendChild(row);
+                });
+            }
 
-        const leavesEl = document.getElementById('my_leaves');
-        if (leavesEl) {
-            leavesEl.innerHTML = `
-                <table>
-                <tr><td><strong>Total Leaves Taken:</strong></td> <td> ${result.total_leaves_taken.toFixed(1)} days</td></tr>
-                <tr><td><strong>${filterLabel}:</strong></td> <td> ${result.leaves_this_month.toFixed(1)} days</td></tr>
-                <tr><td><strong>Pending Leave Requests:</strong></td> <td> ${result.pending_leaves_count}</td></tr>
-                </table>
-            `;
-        }
+        } else {
+            // Update employee dashboard content
+            const result = this.state.data;
+            const filterLabel = this._getFilterLabel();
 
-        const projectBody = document.getElementById("taskTableBody");
-        if (projectBody) {
-            projectBody.innerHTML = "";
-            result.project_tasks.forEach(task => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${task.name || '-'}</td>
-                    <td>${task.task_name || '-'}</td>
-                    <td>${task.deadline || '-'}</td>
-                    <td>${task.stage || '-'}</td>
+            const attendanceEl = document.getElementById('my_attendance');
+            if (attendanceEl) {
+                attendanceEl.innerHTML = `
+                    <table>
+                    <tr><td><strong>${filterLabel}:</strong></td> <td class="ps-5">${result.my_attendance.toFixed(2)} hrs</td></tr>
+                    <tr><td><strong>Today:</strong></td> <td class="ps-5"> ${result.hours_today.toFixed(2)} hrs</td></tr>
+                    <tr><td><strong>Ongoing:</strong></td> <td class="ps-5"> ${result.last_attendance_worked_hours.toFixed(2)} hrs</td></tr>
+                    <tr><td><strong>Overtime:</strong></td> <td class="ps-5"> ${result.total_overtime.toFixed(2)} hrs</td></tr>
+                    <tr><td><strong>Total Days:</strong></td> <td class="ps-5"> ${result.total_days_present} Days</td></tr>
+                    </table>
                 `;
-                projectBody.appendChild(row);
-            });
+                document.getElementById('employeeImage').innerHTML = `
+                    <img src="data:image/png;base64,${result.personal_details.employee_image}" width="100%" height="100%"/>
+                `;
+            }
+
+            const informationEl = document.getElementById('my_information');
+            if (informationEl) {
+                informationEl.innerHTML = `
+                    <table>
+                    <tr><td><strong>Name:</strong></td> <td class="ps-3"> ${result.personal_details.employee_name}</td></tr>
+                    <tr><td><strong>Email:</strong></td> <td class="ps-3"> ${result.personal_details.employee_email}</td></tr>
+                    <tr><td><strong>Phone:</strong></td> <td class="ps-3"> ${result.personal_details.employee_phone}</td></tr>
+                    <tr><td><strong>Department:</strong></td> <td class="ps-3"> ${result.personal_details.employee_department}</td></tr>
+                    <tr><td><strong>Job:</strong></td> <td class="ps-3"> ${result.personal_details.employee_job}</td></tr>
+                    </table>
+                `;
+            }
+
+            const leavesEl = document.getElementById('my_leaves');
+            if (leavesEl) {
+                leavesEl.innerHTML = `
+                    <table>
+                    <tr><td><strong>Total Leaves Taken:</strong></td> <td class="ps-5"> ${result.total_leaves_taken.toFixed(1)} days</td></tr>
+                    <tr><td><strong>${filterLabel}:</strong></td> <td class="ps-5"> ${result.leaves_this_month.toFixed(1)} days</td></tr>
+                    <tr><td><strong>Pending Leave Requests:</strong></td> <td class="ps-5"> ${result.pending_leaves_count}</td></tr>
+                    </table>
+                `;
+            }
+
+            const projectBody = document.getElementById("taskTableBody");
+            if (projectBody) {
+                projectBody.innerHTML = "";
+                result.project_tasks.forEach(task => {
+                    const row = document.createElement("tr");
+                    row.onclick = () => {
+                        this.action.doAction({
+                            type: 'ir.actions.act_window',
+                            name: 'Task',
+                            res_model: 'project.task',
+                            res_id: task.id,
+                            views: [
+                                [false, "form"],
+                            ],
+                        });
+                    };
+                    row.innerHTML = `
+                        <td>${task.task_name || '-'}</td>
+                        <td>${task.name || '-'}</td>
+                        <td>${task.deadline || '-'}</td>
+                        <td>${task.stage || '-'}</td>
+                    `;
+                    projectBody.appendChild(row);
+                });
+            }
+
+            document.getElementById('projectCount').textContent = result.project_task_count.project_count;
+            document.getElementById('taskCount').textContent = result.project_task_count.task_count;
+            document.getElementById('remainingProjectCount').textContent = result.project_task_count.remaining_project_count;
+            document.getElementById('remainingTaskCount').textContent = result.project_task_count.remaining_task_count;
         }
+    }
 
-        document.getElementById('projectCount').textContent = result.project_task_count.project_count;
-        document.getElementById('taskCount').textContent = result.project_task_count.task_count;
-        document.getElementById('remainingProjectCount').textContent = result.project_task_count.remaining_project_count;
-        document.getElementById('remainingTaskCount').textContent = result.project_task_count.remaining_task_count;
-
+    // Method to destroy existing charts
+    _destroyExistingCharts() {
+        Object.keys(this.chartInstances).forEach(chartId => {
+            if (this.chartInstances[chartId]) {
+                this.chartInstances[chartId].destroy();
+                delete this.chartInstances[chartId];
+            }
+        });
     }
 
     _createCharts() {
-        if (!this.state.data) return;
         const result = this.state.data;
-        const filterLabel = this._getFilterLabel();
+        if (!result) return;
 
-        const attendanceCanvas = document.getElementById("attendanceChart");
-        if (attendanceCanvas) {
-            new Chart(attendanceCanvas, {
-                type: 'doughnut',
-                data: {
-                    labels: [filterLabel, 'Today', 'Ongoing', 'Overtime'],
-                    datasets: [{
-                        label: 'Hours',
-                        data: [
-                            result.my_attendance,
-                            result.hours_today,
-                            result.last_attendance_worked_hours,
-                            result.total_overtime
-                        ],
-                        backgroundColor: ['#36A2EB', '#4BC0C0', '#FFCE56', '#FF6384'],
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Attendance Summary'
+        // Destroy existing charts before creating new ones
+        this._destroyExistingCharts();
+
+        if (result.is_manager) {
+            // Manager-specific charts
+            const attendanceCanvas = document.getElementById("managerAttendanceChart");
+            if (attendanceCanvas) {
+                this.chartInstances.managerAttendanceChart = new Chart(attendanceCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Total', 'Men', 'Women'],
+                        datasets: [{
+                            label: 'Attendance (Days)',
+                            data: [
+                                result.manager_attendance.total,
+                                result.manager_attendance.men,
+                                result.manager_attendance.women
+                            ],
+                            backgroundColor: ['#71639e', '#36A2EB', '#FF6384'],
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Team Attendance Summary'
+                            }
                         }
                     }
-                }
-            });
-        }
+                });
+            }
 
-        const leaveCanvas = document.getElementById("leaveChart");
-        if (leaveCanvas) {
-            new Chart(leaveCanvas, {
-                type: 'bar',
-                data: {
-                    labels: ['Total Taken', filterLabel, 'Pending'],
-                    datasets: [{
-                        label: ['Leave (days)'],
-                        data: [
-                            result.total_leaves_taken,
-                            result.leaves_this_month,
-                            result.pending_leaves_count
-                        ],
-                        backgroundColor: ['#36A2EB', '#FF6384', '#FFCE56'],
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Leave Summary'
+            const leaveCanvas = document.getElementById("managerLeaveChart");
+            if (leaveCanvas) {
+                this.chartInstances.managerLeaveChart = new Chart(leaveCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Total', 'Men', 'Women'],
+                        datasets: [{
+                            label: 'Leave (Days)',
+                            data: [
+                                result.manager_leaves.total,
+                                result.manager_leaves.men,
+                                result.manager_leaves.women
+                            ],
+                            backgroundColor: ['#71639e', '#36A2EB', '#FF6384'],
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Team Leave Summary'
+                            }
                         }
                     }
-                }
-            });
-        }
-    }
+                });
+            }
 
-    async refreshData() {
-        await this._fetch_data();
+            const projectCanvas = document.getElementById("managerProjectChart");
+            if (projectCanvas) {
+                this.chartInstances.managerProjectChart = new Chart(projectCanvas, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Completed Project', 'Remaining Project', 'Completed Task', 'Remaining Task'],
+                        datasets: [{
+                            data: [
+                                result.manager_project_count.total_projects - result.manager_project_count.remaining_projects,
+                                result.manager_project_count.remaining_projects,
+                                result.manager_project_count.total_tasks - result.manager_project_count.remaining_tasks,
+                                result.manager_project_count.remaining_tasks,
+                            ],
+                            backgroundColor: ['#36A2EB', '#4BC0C0', '#FFCE56', '#FF6384'],
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Team Project Summary'
+                            }
+                        }
+                    }
+                });
+            }
+        } else {
+            // Employee charts
+            const filterLabel = this._getFilterLabel();
+
+            const attendanceCanvas = document.getElementById("attendanceChart");
+            if (attendanceCanvas) {
+                this.chartInstances.attendanceChart = new Chart(attendanceCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: [filterLabel, 'Today', 'Ongoing', 'Overtime'],
+                        datasets: [{
+                            label: 'Hours',
+                            data: [
+                                result.my_attendance,
+                                result.hours_today,
+                                result.last_attendance_worked_hours,
+                                result.total_overtime
+                            ],
+                            backgroundColor: ['#36A2EB', '#4BC0C0', '#FFCE56', '#FF6384'],
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Attendance Summary'
+                            }
+                        }
+                    }
+                });
+            }
+
+            const leaveCanvas = document.getElementById("leaveChart");
+            if (leaveCanvas) {
+                this.chartInstances.leaveChart = new Chart(leaveCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Total Taken', filterLabel, 'Pending'],
+                        datasets: [{
+                            label: ['Leave (days)'],
+                            data: [
+                                result.total_leaves_taken,
+                                result.leaves_this_month,
+                                result.pending_leaves_count
+                            ],
+                            backgroundColor: ['#36A2EB', '#FF6384', '#FFCE56'],
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Leave Summary'
+                            }
+                        }
+                    }
+                });
+            }
+        }
     }
 }
 
-EmployeeDashboard.template = "employee_dashboard.EmployeeDashboard";
-registry.category("actions").add("employee_dashboard_tag", EmployeeDashboard);
+registry.category("actions").add("employee_dashboard_tag", Dashboard);

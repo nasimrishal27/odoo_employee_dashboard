@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@balkangraph/orgchart.js": "^8.17.6",
     "chart.js": "^4.4.9"
   }
 }
