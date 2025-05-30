@@ -1,18 +1,16 @@
 /** @odoo-module **/
-
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { Component, useState, onMounted } from "@odoo/owl";
 
 class Dashboard extends Component {
-    static template = "employee_dashboard.BaseDashboard";
+    static template = "employee_dashboard.EmployeeDashboard";
 
     setup() {
         super.setup();
         this.orm = useService('orm');
         this.action = useService("action");
         this.chartInstances = {};
-
         this.state = useState({
             data: null,
             loading: true,
@@ -24,7 +22,6 @@ class Dashboard extends Component {
                 filterDate: null,
             }
         });
-
         onMounted(() => {
             this._initializeDates();
             this._fetch_data();
@@ -35,10 +32,8 @@ class Dashboard extends Component {
         const today = new Date();
         const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
         this.state.filters.startDate = firstDayOfMonth.toISOString().split('T')[0];
         this.state.filters.endDate = lastDayOfMonth.toISOString().split('T')[0];
-
         setTimeout(() => {
             const startDateEl = document.getElementById('startDate');
             const endDateEl = document.getElementById('endDate');
@@ -126,11 +121,9 @@ class Dashboard extends Component {
     _updateFilterOptions() {
         const filterEl = document.getElementById('dateFilter');
         if (!filterEl) return;
-
         let options = '';
         const filterType = this.state.filters.type;
         const currentYear = new Date().getFullYear();
-
         if (filterType === 'days') {
             options = `
                 <option value="today">Today</option>
@@ -156,7 +149,6 @@ class Dashboard extends Component {
                 <option value="${currentYear - 2}">${currentYear - 2}</option>
             `;
         }
-
         filterEl.innerHTML = options;
         this.state.filters.value = filterEl.value;
         this._updateDateRange();
@@ -166,7 +158,6 @@ class Dashboard extends Component {
         const today = new Date();
         let startDate, endDate;
         const { type, value } = this.state.filters;
-
         if (type === 'days') {
             switch (value) {
                 case 'today':
@@ -224,7 +215,6 @@ class Dashboard extends Component {
                 endDate = new Date(year, 11, 31);
             }
         }
-
         if (startDate && endDate) {
             this.state.filters.startDate = startDate.toISOString().split('T')[0];
             this.state.filters.endDate = endDate.toISOString().split('T')[0];
@@ -283,12 +273,9 @@ class Dashboard extends Component {
                     projectBody.appendChild(row);
                 });
             }
-
         } else {
-            // Update employee dashboard content
             const result = this.state.data;
             const filterLabel = this._getFilterLabel();
-
             const attendanceEl = document.getElementById('my_attendance');
             if (attendanceEl) {
                 attendanceEl.innerHTML = `
@@ -304,7 +291,6 @@ class Dashboard extends Component {
                     <img src="data:image/png;base64,${result.personal_details.employee_image}" width="100%" height="100%"/>
                 `;
             }
-
             const informationEl = document.getElementById('my_information');
             if (informationEl) {
                 informationEl.innerHTML = `
@@ -317,7 +303,6 @@ class Dashboard extends Component {
                     </table>
                 `;
             }
-
             const leavesEl = document.getElementById('my_leaves');
             if (leavesEl) {
                 leavesEl.innerHTML = `
@@ -328,7 +313,6 @@ class Dashboard extends Component {
                     </table>
                 `;
             }
-
             const projectBody = document.getElementById("taskTableBody");
             if (projectBody) {
                 projectBody.innerHTML = "";
@@ -354,7 +338,6 @@ class Dashboard extends Component {
                     projectBody.appendChild(row);
                 });
             }
-
             document.getElementById('projectCount').textContent = result.project_task_count.project_count;
             document.getElementById('taskCount').textContent = result.project_task_count.task_count;
             document.getElementById('remainingProjectCount').textContent = result.project_task_count.remaining_project_count;
@@ -362,7 +345,6 @@ class Dashboard extends Component {
         }
     }
 
-    // Method to destroy existing charts
     _destroyExistingCharts() {
         Object.keys(this.chartInstances).forEach(chartId => {
             if (this.chartInstances[chartId]) {
@@ -376,11 +358,45 @@ class Dashboard extends Component {
         const result = this.state.data;
         if (!result) return;
 
-        // Destroy existing charts before creating new ones
         this._destroyExistingCharts();
-
+        if (result.employee_hierarchy && result.employee_hierarchy.length > 0) {
+            const chartContainer = document.getElementById("employeeHierarchyChart");
+            if (chartContainer) {
+                chartContainer.innerHTML = '';
+                const rootNode = result.employee_hierarchy.find(emp => !emp.pid);
+                if (rootNode) {
+                    try {
+                        const chart = new OrgChart(chartContainer, {
+                            template: "belinda",
+                            layout: OrgChart.tree,
+                            scaleInitial: 0.6,
+                            mouseScrool: OrgChart.action.zoom,
+                            enableDragDrop: false,
+                            nodeBinding: {
+                                field_0: "name",
+                                field_1: "title",
+                                img_0: "img"
+                            },
+                            nodes: result.employee_hierarchy
+                        });
+                    } catch (error) {
+                        console.error("Error creating org chart:", error);
+                        chartContainer.innerHTML = '<p>Error loading organizational chart</p>';
+                    }
+                } else {
+                    console.error("No root node found");
+                    chartContainer.innerHTML = '<p>Unable to display hierarchy: No root found</p>';
+                }
+            }
+        } else {
+            const chartContainer = document.getElementById("employeeHierarchyChart");
+            if (chartContainer) {
+                chartContainer.innerHTML = '<p>No hierarchy data available</p>';
+            }
+            console.log("No employee hierarchy data available");
+        }
         if (result.is_manager) {
-            // Manager-specific charts
+            console.log(result.employee_hierarchy)
             const attendanceCanvas = document.getElementById("managerAttendanceChart");
             if (attendanceCanvas) {
                 this.chartInstances.managerAttendanceChart = new Chart(attendanceCanvas, {
@@ -388,7 +404,7 @@ class Dashboard extends Component {
                     data: {
                         labels: ['Total', 'Men', 'Women'],
                         datasets: [{
-                            label: 'Attendance (Days)',
+                            label: 'Attendance (Total)',
                             data: [
                                 result.manager_attendance.total,
                                 result.manager_attendance.men,
@@ -408,7 +424,6 @@ class Dashboard extends Component {
                     }
                 });
             }
-
             const leaveCanvas = document.getElementById("managerLeaveChart");
             if (leaveCanvas) {
                 this.chartInstances.managerLeaveChart = new Chart(leaveCanvas, {
@@ -416,7 +431,7 @@ class Dashboard extends Component {
                     data: {
                         labels: ['Total', 'Men', 'Women'],
                         datasets: [{
-                            label: 'Leave (Days)',
+                            label: 'Leave (Total)',
                             data: [
                                 result.manager_leaves.total,
                                 result.manager_leaves.men,
@@ -436,7 +451,6 @@ class Dashboard extends Component {
                     }
                 });
             }
-
             const projectCanvas = document.getElementById("managerProjectChart");
             if (projectCanvas) {
                 this.chartInstances.managerProjectChart = new Chart(projectCanvas, {
@@ -465,9 +479,7 @@ class Dashboard extends Component {
                 });
             }
         } else {
-            // Employee charts
             const filterLabel = this._getFilterLabel();
-
             const attendanceCanvas = document.getElementById("attendanceChart");
             if (attendanceCanvas) {
                 this.chartInstances.attendanceChart = new Chart(attendanceCanvas, {
@@ -497,7 +509,6 @@ class Dashboard extends Component {
                     }
                 });
             }
-
             const leaveCanvas = document.getElementById("leaveChart");
             if (leaveCanvas) {
                 this.chartInstances.leaveChart = new Chart(leaveCanvas, {
