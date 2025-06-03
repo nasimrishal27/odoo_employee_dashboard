@@ -300,11 +300,7 @@ class Dashboard extends Component {
     }
 
     async applyFilter() {
-        // Capture current scroll position
-        const scrollPosition = window.scrollY;
         await this._fetch_data();
-        // Restore scroll position
-        window.scrollTo(0, scrollPosition);
     }
 
     _updateContent() {
