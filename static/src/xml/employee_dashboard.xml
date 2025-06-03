@@ -256,21 +256,21 @@
                                     <h3 class="fw-bold text-center mb-3">Attendance Overview</h3>
                                     <div class="row text-center">
                                         <div class="col-4">
-                                            <div class="rounded-3 p-2">
+                                            <div class="rounded-3 p-2" t-on-click="onClickAttendanceTotal">
                                                 <i class="fa fa-group mb-1" style="font-size: 20px;"></i>
                                                 <h4>Total</h4>
                                                 <div id="manager_attendance_total" style="font-size: 20px;">0</div>
                                             </div>
                                         </div>
                                         <div class="col-4">
-                                            <div class="rounded-3 p-2">
+                                            <div class="rounded-3 p-2" t-on-click="onClickAttendanceMen">
                                                 <i class="fa fa-male mb-1" style="font-size: 20px;"></i>
                                                 <h4>Men</h4>
                                                 <div id="manager_attendance_men" style="font-size: 20px;">0</div>
                                             </div>
                                         </div>
                                         <div class="col-4">
-                                            <div class="rounded-3 p-2">
+                                            <div class="rounded-3 p-2" t-on-click="onClickAttendanceWomen">
                                                 <i class="fa fa-female mb-1" style="font-size: 20px;"></i>
                                                 <h4>Women</h4>
                                                 <div id="manager_attendance_women" style="font-size: 20px;">0</div>
@@ -296,21 +296,21 @@
                                     <h3 class="fw-bold text-center mb-3">Leave Overview</h3>
                                     <div class="row text-center">
                                         <div class="col-4">
-                                            <div class="rounded-3 p-2">
+                                            <div class="rounded-3 p-2" t-on-click="onClickLeaveTotal">
                                                 <i class="fa fa-group mb-1" style="font-size: 20px;"></i>
                                                 <h4>Total</h4>
                                                 <div id="manager_leave_total" style="font-size: 20px;">0</div>
                                             </div>
                                         </div>
                                         <div class="col-4">
-                                            <div class="rounded-3 p-2">
+                                            <div class="rounded-3 p-2" t-on-click="onClickLeaveMen">
                                                 <i class="fa fa-male mb-1" style="font-size: 20px;"></i>
                                                 <h4>Men</h4>
                                                 <div id="manager_leave_men" style="font-size: 20px;">0</div>
                                             </div>
                                         </div>
                                         <div class="col-4">
-                                            <div class="rounded-3 p-2">
+                                            <div class="rounded-3 p-2" t-on-click="onClickLeaveWomen">
                                                 <i class="fa fa-female mb-1" style="font-size: 20px;"></i>
                                                 <h4>Women</h4>
                                                 <div id="manager_leave_women" style="font-size: 20px;">0</div>
@@ -339,7 +339,7 @@
                                             <div class="row text-center mb-2">
                                                 <!-- Total Projects -->
                                                 <div class="col-6">
-                                                    <div class="rounded-3 p-2">
+                                                    <div class="rounded-3 p-2" t-on-click="onClickTotalProject">
                                                         <i class="fa fa-folder-open mb-1" style="font-size: 20px;"></i>
                                                         <h4>Total Projects</h4>
                                                         <div id="manager_total_projects" style="font-size: 20px;">0</div>
@@ -347,7 +347,7 @@
                                                 </div>
                                                 <!-- Total Tasks -->
                                                 <div class="col-6">
-                                                    <div class="rounded-3 p-2">
+                                                    <div class="rounded-3 p-2" t-on-click="onClickTotalTask">
                                                         <i class="fa fa-tasks mb-1" style="font-size: 20px;"></i>
                                                         <h4>Total Tasks</h4>
                                                         <div id="manager_total_tasks" style="font-size: 20px;">0</div>
@@ -357,7 +357,7 @@
                                             <div class="row text-center">
                                                 <!-- Remaining Projects -->
                                                 <div class="col-6">
-                                                    <div class="rounded-3 p-2">
+                                                    <div class="rounded-3 p-2" t-on-click="onClickRemainingProject">
                                                         <i class="fa fa-hourglass-half mb-1" style="font-size: 20px;"></i>
                                                         <h4>Remaining Projects</h4>
                                                         <div id="manager_remaining_projects" style="font-size: 20px;">0</div>
@@ -365,7 +365,7 @@
                                                 </div>
                                                 <!-- Remaining Tasks -->
                                                 <div class="col-6">
-                                                    <div class="rounded-3 p-2">
+                                                    <div class="rounded-3 p-2" t-on-click="onClickRemainingTask">
                                                         <i class="fa fa-reorder mb-1" style="font-size: 20px;"></i>
                                                         <h4>Remaining Tasks</h4>
                                                         <div id="manager_remaining_tasks" style="font-size: 20px;">0</div>

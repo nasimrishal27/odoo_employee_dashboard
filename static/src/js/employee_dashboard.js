@@ -75,7 +75,7 @@ class Dashboard extends Component {
     async _fetch_data() {
         try {
             this.state.loading = true;
-            const result = await this.orm.call("hr.employee", "get_tiles_data", [], {
+            const result = await this.orm.call("employee.dashboard", "get_tiles_data", [], {
                 filter_type: this.state.filters.type,
                 filter_value: this.state.filters.value,
                 start_date: this.state.filters.startDate,
@@ -234,7 +234,6 @@ class Dashboard extends Component {
         if (!this.state.data) return;
 
         if (this.state.data.is_manager) {
-            // Update manager dashboard content
             const result = this.state.data;
             document.getElementById('manager_attendance_total').textContent = result.manager_attendance.total;
             document.getElementById('manager_attendance_men').textContent = result.manager_attendance.men;
@@ -360,6 +359,7 @@ class Dashboard extends Component {
 
         this._destroyExistingCharts();
         if (result.employee_hierarchy && result.employee_hierarchy.length > 0) {
+            console.log(result.employee_hierarchy)
             const chartContainer = document.getElementById("employeeHierarchyChart");
             if (chartContainer) {
                 chartContainer.innerHTML = '';
@@ -538,6 +538,173 @@ class Dashboard extends Component {
                 });
             }
         }
+    }
+
+    onClickTotalProject() {
+        this.action.doAction({
+            type: 'ir.actions.act_window',
+            name: 'Projects',
+            res_model: 'project.project',
+            views: [[false, 'list'], [false, 'form'], [false, 'kanban']],
+            target: 'current',
+        });
+    }
+
+    onClickTotalTask() {
+        this.action.doAction({
+            type: 'ir.actions.act_window',
+            name: 'Tasks',
+            res_model: 'project.task',
+            views: [[false, 'list'], [false, 'form'], [false, 'kanban']],
+            target: 'current',
+        });
+    }
+
+    onClickRemainingProject() {
+        this.action.doAction({
+            type: 'ir.actions.act_window',
+            name: 'Projects',
+            res_model: 'project.project',
+            domain: [['last_update_status', '!=', 'done']],
+            views: [[false, 'list'], [false, 'form'], [false, 'kanban']],
+            target: 'current',
+        });
+    }
+
+    onClickRemainingTask() {
+        this.action.doAction({
+            type: 'ir.actions.act_window',
+            name: 'Tasks',
+            res_model: 'project.task',
+            domain: [
+                ["stage_id.name", "not in", ["Done", "Cancelled"]]
+            ],
+            views: [[false, 'list'], [false, 'form'], [false, 'kanban']],
+            target: 'current',
+        });
+    }
+
+    onClickAttendanceTotal() {
+        const startDate = this.state.data.filter_start_date;
+        const endDate = this.state.data.filter_end_date;
+        const today = new Date().toISOString().split('T')[0];
+        const domain = startDate && endDate
+            ? [['check_in', '>=', startDate], ['check_in', '<=', endDate]]
+            : [['check_in', '>=', today], ['check_in', '<=', today]];
+
+        this.action.doAction({
+            type: 'ir.actions.act_window',
+            name: 'Attendance',
+            res_model: 'hr.attendance',
+            domain: domain,
+            views: [[false, 'list'], [false, 'form']],
+            target: 'current',
+        });
+    }
+
+    onClickAttendanceMen() {
+        const startDate = this.state.data.filter_start_date;
+        const endDate = this.state.data.filter_end_date;
+        const today = new Date().toISOString().split('T')[0];
+        const dateDomain = startDate && endDate
+            ? [['check_in', '>=', startDate], ['check_in', '<=', endDate]]
+            : [['check_in', '>=', today], ['check_in', '<=', today]];
+
+        const genderDomain = [['employee_id.gender', '=', 'male']];
+        const domain = [...dateDomain, ...genderDomain];
+        this.action.doAction({
+            type: 'ir.actions.act_window',
+            name: 'Attendance (Male Employees)',
+            res_model: 'hr.attendance',
+            domain: domain,
+            views: [[false, 'list'], [false, 'form']],
+            target: 'current',
+        });
+    }
+
+
+    onClickAttendanceWomen() {
+        const startDate = this.state.data.filter_start_date;
+        const endDate = this.state.data.filter_end_date;
+        const today = new Date().toISOString().split('T')[0];
+        const dateDomain = startDate && endDate
+            ? [['check_in', '>=', startDate], ['check_in', '<=', endDate]]
+            : [['check_in', '>=', today], ['check_in', '<=', today]];
+        const genderDomain = [['employee_id.gender', '=', 'female']];
+        const domain = [...dateDomain, ...genderDomain];
+
+        this.action.doAction({
+            type: 'ir.actions.act_window',
+            name: 'Attendance (Male Employees)',
+            res_model: 'hr.attendance',
+            domain: domain,
+            views: [[false, 'list'], [false, 'form']],
+            target: 'current',
+        });
+    }
+
+    onClickLeaveTotal() {
+        const startDate = this.state.data.filter_start_date;
+        const endDate = this.state.data.filter_end_date;
+        const today = new Date().toISOString().split('T')[0];
+        const dateDomain = startDate && endDate
+            ? [['request_date_from', '>=', startDate], ['request_date_to', '<=', endDate]]
+            : [['request_date_from', '>=', today], ['request_date_to', '<=', today]];
+        const stateDomain = [['state', '=', 'validate']];
+        const domain = [...dateDomain, ...stateDomain];
+
+        this.action.doAction({
+            type: 'ir.actions.act_window',
+            name: 'Leave',
+            res_model: 'hr.leave',
+            domain: domain,
+            views: [[false, 'list'], [false, 'form']],
+            target: 'current',
+        });
+    }
+
+    onClickLeaveMen() {
+        const startDate = this.state.data.filter_start_date;
+        const endDate = this.state.data.filter_end_date;
+        const today = new Date().toISOString().split('T')[0];
+        const dateDomain = startDate && endDate
+            ? [['request_date_from', '>=', startDate], ['request_date_to', '<=', endDate]]
+            : [['request_date_from', '>=', today], ['request_date_to', '<=', today]];
+        const stateDomain = [['state', '=', 'validate']];
+        const genderDomain = [['employee_id.gender', '=', 'male']];
+        const domain = [...dateDomain, ...stateDomain, ...genderDomain];
+
+        this.action.doAction({
+            type: 'ir.actions.act_window',
+            name: 'Leave (Male Employees)',
+            res_model: 'hr.leave',
+            domain: domain,
+            views: [[false, 'list'], [false, 'form']],
+            target: 'current',
+        });
+    }
+
+
+
+    onClickLeaveWomen() {
+        const startDate = this.state.data.filter_start_date;
+        const endDate = this.state.data.filter_end_date;
+        const today = new Date().toISOString().split('T')[0];
+        const dateDomain = startDate && endDate
+            ? [['request_date_from', '>=', startDate], ['request_date_to', '<=', endDate]]
+            : [['request_date_from', '>=', today], ['request_date_to', '<=', today]];
+        const stateDomain = [['state', '=', 'validate']];
+        const genderDomain = [['employee_id.gender', '=', 'female']];
+        const domain = [...dateDomain, ...stateDomain, ...genderDomain];
+
+        this.action.doAction({
+            type: 'ir.actions.act_window',
+            name: 'Leave (Male Employees)',
+            res_model: 'hr.leave',
+            domain: domain,
+            views: [[false, 'list'], [false, 'form']],
+            target: 'current',
+        });
     }
 }
 
