@@ -4,7 +4,6 @@
         <t t-call-assets="web.assets_frontend" t-js="true"/>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="/employee_dashboard/static/lib/orgchart/orgchart.js"></script>
-
         <div class="employee-dashboard-container" style="height: 100vh; overflow-y: auto; overflow-x: hidden;">
             <t t-if="!state.is_manager">
                 <div class="d-flex" style="min-height: 100vh;">
@@ -69,7 +68,7 @@
                                         <div class="icon-box position-absolute" style="top: 20px; left: 20px; background-color: #71639e; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
                                             <i class="fa fa-id-card-o text-white" style="font-size: 30px;"></i>
                                         </div>
-                                        <div class="card-body p-3 mt-5"> <!-- add mt-5 to give space under the icon -->
+                                        <div class="card-body p-3 mt-5">
                                             <center><h3 class="mb-4" style="font-weight: bold;">Personal Information</h3></center>
                                             <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
                                                 <div class="text-start ps-3">
@@ -83,11 +82,10 @@
                                 <!-- Attendance Tile -->
                                 <div class="col-12 col-md-10 col-lg-5">
                                     <div class="card border rounded-4 text-center shadow-sm h-100 position-relative" style="cursor: pointer;">
-                                        <!-- Icon placed absolutely at top-left -->
                                         <div class="icon-box position-absolute" style="top: 20px; left: 20px; background-color: #71639e; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
                                             <i class="fa fa-calendar-check-o text-white" style="font-size: 30px;"></i>
                                         </div>
-                                        <div class="card-body p-3 mt-5"> <!-- add mt-5 to give space under the icon -->
+                                        <div class="card-body p-3 mt-5">
                                             <center><h3 class="mb-4" style="font-weight: bold;">Attendance</h3></center>
                                             <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
                                                 <div class="text-start ps-3">
@@ -148,7 +146,6 @@
                                                     </div>
                                                 </div>
                                             </div>
-
                                         </div>
                                     </div>
                                 </div>
@@ -159,7 +156,7 @@
                                         <div class="icon-box position-absolute" style="top: 20px; left: 20px; background-color: #71639e; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
                                             <i class="fa fa-plane text-white" style="font-size: 30px;"></i>
                                         </div>
-                                        <div class="card-body p-3 mt-5"> <!-- add mt-5 to give space under the icon -->
+                                        <div class="card-body p-3 mt-5">
                                             <center><h3 class="mb-4" style="font-weight: bold;">Leaves</h3></center>
                                             <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
                                                 <div class="text-start ps-3">
@@ -174,10 +171,36 @@
                                 </div>
                             </div>
                             <!-- Task Table -->
-                            <div class="row justify-content-center mt-5 mb-5">
+                            <div class="row justify-content-center mb-5 mt-5">
                                 <div class="col-10">
                                     <div class="card border rounded-4 shadow-sm">
                                         <div class="card-body">
+                                            <!-- Filter Wrapper -->
+                                            <div class="d-flex justify-content-center mb-4 mt-4">
+                                                <div class="row w-100 justify-content-center align-items-center">
+                                                    <div class="col-md-4">
+                                                        <label class="form-label fw-bold mb-1">Deadline:</label>
+                                                        <input type="date" class="form-control form-control-sm" id="deadlineFilter" t-on-change="onDeadlineFilterChange" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label fw-bold mb-1">Status:</label>
+                                                        <select class="form-select form-select-sm" id="statusFilter" t-on-change="onStatusFilterChange">
+                                                            <option value="">All Statuses</option>
+                                                            <!-- Options populated by JS -->
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <button class="btn btn-primary btn-sm w-100" t-on-click="applyTaskFilter">
+                                                            <i class="fa fa-filter"></i> Apply
+                                                        </button>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <button class="btn btn-secondary btn-sm w-100" t-on-click="clearTaskFilter">
+                                                            <i class="fa fa-times"></i> Clear
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
                                             <h3 class="mb-4 text-center" style="font-weight: bold;">Tasks</h3>
                                             <!-- Scrollable table wrapper -->
                                             <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
@@ -254,7 +277,7 @@
                                 </div>
                                 <div class="card-body p-3 mt-5">
                                     <h3 class="fw-bold text-center mb-3">Attendance Overview</h3>
-                                    <div class="row text-center">
+                                    <div class="row text-center" style="cursor: pointer;">
                                         <div class="col-4">
                                             <div class="rounded-3 p-2" t-on-click="onClickAttendanceTotal">
                                                 <i class="fa fa-group mb-1" style="font-size: 20px;"></i>
@@ -288,13 +311,12 @@
                         <!-- Leave Tile -->
                         <div class="col-12 col-md-10 col-lg-4">
                             <div class="card border rounded-4 shadow-sm h-100 p-3 position-relative">
-                                <!-- Icon placed absolutely at top-left -->
                                 <div class="icon-box position-absolute" style="top: 20px; left: 20px; background-color: #71639e; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
                                     <i class="fa fa-plane text-white" style="font-size: 30px;"></i>
                                 </div>
                                 <div class="card-body p-3 mt-5">
                                     <h3 class="fw-bold text-center mb-3">Leave Overview</h3>
-                                    <div class="row text-center">
+                                    <div class="row text-center" style="cursor: pointer;">
                                         <div class="col-4">
                                             <div class="rounded-3 p-2" t-on-click="onClickLeaveTotal">
                                                 <i class="fa fa-group mb-1" style="font-size: 20px;"></i>
@@ -327,14 +349,13 @@
                         </div>
                         <!-- Project Tile -->
                         <div class="col-12 col-md-10 col-lg-4">
-                            <div class="card border rounded-4 text-center shadow-sm h-100" style="cursor: pointer;">
+                            <div class="card border rounded-4 text-center shadow-sm h-100">
                                 <div class="icon-box position-absolute" style="top: 20px; left: 20px; background-color: #71639e; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
                                     <i class="fa fa-puzzle-piece text-white" style="font-size: 30px;"></i>
                                 </div>
                                 <div class="card-body p-3 mt-5">
                                     <center><h3 class="mb-4" style="font-weight: bold;">Projects</h3></center>
-                                    <div class="d-flex align-items-center">
-                                        <!-- Info Grid (2 rows x 2 columns) -->
+                                    <div class="d-flex align-items-center" style="cursor: pointer;">
                                         <div class="w-100">
                                             <div class="row text-center mb-2">
                                                 <!-- Total Projects -->
@@ -384,12 +405,43 @@
                         </div>
                     </div>
                     <!-- Task Table -->
-                    <div class="row justify-content-center mt-5 mb-5">
-                        <div class="col-14 col-md-10">
+                    <div class="row justify-content-center mb-5">
+                        <div class="col-10">
                             <div class="card border rounded-4 shadow-sm">
                                 <div class="card-body">
-                                    <h3 class="mb-4 text-center" style="font-weight: bold;">Total Tasks</h3>
-                                    <!-- Scrollable table wrapper -->
+                                    <div class="d-flex justify-content-center mb-4 mt-4">
+                                        <div class="row w-100 justify-content-center align-items-center">
+                                            <div class="col-md-2">
+                                                <label class="form-label fw-bold mb-1">Assignee:</label>
+                                                <select class="form-select form-select-sm" id="managerAssigneeFilter" t-on-change="onAssigneeFilterChange">
+                                                    <option value="">All Assignees</option>
+                                                    <!-- Options populated by JS -->
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label fw-bold mb-1">Deadline:</label>
+                                                <input type="date" class="form-control form-control-sm" id="managerDeadlineFilter" t-on-change="onDeadlineFilterChange" />
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label fw-bold mb-1">Status:</label>
+                                                <select class="form-select form-select-sm" id="managerStatusFilter" t-on-change="onStatusFilterChange">
+                                                    <option value="">All Statuses</option>
+                                                    <!-- Options populated by JS -->
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2 d-flex align-items-end">
+                                                <button class="btn btn-primary btn-sm w-100" t-on-click="applyTaskFilter">
+                                                    <i class="fa fa-filter"></i> Apply
+                                                </button>
+                                            </div>
+                                            <div class="col-md-2 d-flex align-items-end">
+                                                <button class="btn btn-secondary btn-sm w-100" t-on-click="clearTaskFilter">
+                                                    <i class="fa fa-times"></i> Clear
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <h3 class="mb-4 text-center fw-bold">Total Tasks</h3>
                                     <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                                         <table class="table table-borderless" id="managerProjectsTable" style="cursor: pointer;">
                                             <thead class="sticky-top bg-white">
@@ -412,7 +464,7 @@
                     </div>
                     <!-- Employee Hierarchy-->
                     <div class="row justify-content-center mt-5 mb-5">
-                        <div class="col-14 col-md-10">
+                        <div class="col-10">
                             <div class="card border rounded-4 shadow-sm">
                                 <div class="card-body">
                                     <h3 class="mb-4 text-center" style="font-weight: bold;">Employee Hierarchy</h3>

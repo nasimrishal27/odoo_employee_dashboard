@@ -20,7 +20,12 @@ class Dashboard extends Component {
                 startDate: null,
                 endDate: null,
                 filterDate: null,
-            }
+                assignee: '',
+                deadline: null,
+                status: '',
+            },
+            assignees: [],
+            statuses: [],
         });
         onMounted(() => {
             this._initializeDates();
@@ -41,6 +46,8 @@ class Dashboard extends Component {
             if (startDateEl) startDateEl.value = this.state.filters.startDate;
             if (endDateEl) endDateEl.value = this.state.filters.endDate;
             if (filterDateEl) filterDateEl.value = this.state.filters.filterDate;
+            this._populateAssigneeOptions();
+            this._populateStatusOptions();
         }, 100);
     }
 
@@ -80,19 +87,57 @@ class Dashboard extends Component {
                 filter_value: this.state.filters.value,
                 start_date: this.state.filters.startDate,
                 end_date: this.state.filters.endDate,
-                filter_date: this.state.filters.filterDate
+                filter_date: this.state.filters.filterDate,
+                assignee: this.state.is_manager ? this.state.filters.assignee : null,
+                deadline: this.state.filters.deadline,
+                status: this.state.filters.status,
             });
             this.state.data = result;
             this.state.loading = false;
             this.state.is_manager = result.is_manager;
+            this.state.assignees = result.assignees || [];
+            this.state.statuses = result.statuses || [];
 
             await new Promise(resolve => setTimeout(resolve, 100));
             this._updateContent();
             this._createCharts();
+            if (this.state.is_manager) {
+                this._populateAssigneeOptions();
+            }
+            this._populateStatusOptions();
+            // Update filter inputs for Employee Dashboard
+            if (!this.state.is_manager) {
+                const deadlineEl = document.getElementById('deadlineFilter');
+                const statusEl = document.getElementById('statusFilter');
+                if (deadlineEl) deadlineEl.value = this.state.filters.deadline || '';
+                if (statusEl) statusEl.value = this.state.filters.status || '';
+            }
         } catch (error) {
             console.error("Error fetching dashboard data:", error);
             this.state.loading = false;
         }
+    }
+
+    _populateAssigneeOptions() {
+        const assigneeEl = document.getElementById('managerAssigneeFilter');
+        if (!assigneeEl) return;
+        let options = '<option value="">All Assignees</option>';
+        this.state.assignees.forEach(assignee => {
+            options += `<option value="${assignee.id}">${assignee.name}</option>`;
+        });
+        assigneeEl.innerHTML = options;
+        assigneeEl.value = this.state.filters.assignee || '';
+    }
+
+    _populateStatusOptions() {
+        const statusEl = document.getElementById(this.state.is_manager ? 'managerStatusFilter' : 'statusFilter');
+        if (!statusEl) return;
+        let options = '<option value="">All Statuses</option>';
+        this.state.statuses.forEach(status => {
+            options += `<option value="${status.id}">${status.name}</option>`;
+        });
+        statusEl.innerHTML = options;
+        statusEl.value = this.state.filters.status || '';
     }
 
     onFilterTypeChange(event) {
@@ -116,6 +161,35 @@ class Dashboard extends Component {
         if (filterDateEl) {
             this.state.filters.filterDate = filterDateEl.value;
         }
+    }
+
+    onAssigneeFilterChange(event) {
+        this.state.filters.assignee = event.target.value;
+    }
+
+    onDeadlineFilterChange(event) {
+        this.state.filters.deadline = event.target.value || null;
+    }
+
+    onStatusFilterChange(event) {
+        this.state.filters.status = event.target.value;
+    }
+
+    async applyTaskFilter() {
+        await this._fetch_data();
+    }
+
+    async clearTaskFilter() {
+        this.state.filters.assignee = '';
+        this.state.filters.deadline = null;
+        this.state.filters.status = '';
+        const assigneeEl = document.getElementById('managerAssigneeFilter');
+        const deadlineEl = document.getElementById(this.state.is_manager ? 'managerDeadlineFilter' : 'deadlineFilter');
+        const statusEl = document.getElementById(this.state.is_manager ? 'managerStatusFilter' : 'statusFilter');
+        if (assigneeEl) assigneeEl.value = '';
+        if (deadlineEl) deadlineEl.value = '';
+        if (statusEl) statusEl.value = '';
+        await this._fetch_data();
     }
 
     _updateFilterOptions() {
@@ -218,7 +292,6 @@ class Dashboard extends Component {
         if (startDate && endDate) {
             this.state.filters.startDate = startDate.toISOString().split('T')[0];
             this.state.filters.endDate = endDate.toISOString().split('T')[0];
-
             const startDateEl = document.getElementById('startDate');
             const endDateEl = document.getElementById('endDate');
             if (startDateEl) startDateEl.value = this.state.filters.startDate;
@@ -227,12 +300,15 @@ class Dashboard extends Component {
     }
 
     async applyFilter() {
+        // Capture current scroll position
+        const scrollPosition = window.scrollY;
         await this._fetch_data();
+        // Restore scroll position
+        window.scrollTo(0, scrollPosition);
     }
 
     _updateContent() {
         if (!this.state.data) return;
-
         if (this.state.data.is_manager) {
             const result = this.state.data;
             document.getElementById('manager_attendance_total').textContent = result.manager_attendance.total;
@@ -245,7 +321,6 @@ class Dashboard extends Component {
             document.getElementById('manager_total_tasks').textContent = result.manager_project_count.total_tasks;
             document.getElementById('manager_remaining_projects').textContent = result.manager_project_count.remaining_projects;
             document.getElementById('manager_remaining_tasks').textContent = result.manager_project_count.remaining_tasks;
-
             const projectBody = document.getElementById("managerTaskTableBody");
             if (projectBody) {
                 projectBody.innerHTML = "";
@@ -267,7 +342,7 @@ class Dashboard extends Component {
                         <td>${task.name || '-'}</td>
                         <td>${task.deadline || '-'}</td>
                         <td>${task.stage || '-'}</td>
-                        <td>${task.assignees || '-'}</td>
+                        <td>${task.assignees ? task.assignees.join(', ') : '-'}</td>
                     `;
                     projectBody.appendChild(row);
                 });
@@ -279,11 +354,16 @@ class Dashboard extends Component {
             if (attendanceEl) {
                 attendanceEl.innerHTML = `
                     <table>
-                    <tr><td><strong>${filterLabel}:</strong></td> <td class="ps-5">${result.my_attendance.toFixed(2)} hrs</td></tr>
-                    <tr><td><strong>Today:</strong></td> <td class="ps-5"> ${result.hours_today.toFixed(2)} hrs</td></tr>
-                    <tr><td><strong>Ongoing:</strong></td> <td class="ps-5"> ${result.last_attendance_worked_hours.toFixed(2)} hrs</td></tr>
-                    <tr><td><strong>Overtime:</strong></td> <td class="ps-5"> ${result.total_overtime.toFixed(2)} hrs</td></tr>
-                    <tr><td><strong>Total Days:</strong></td> <td class="ps-5"> ${result.total_days_present} Days</td></tr>
+                    <tr><td><strong>${filterLabel}:</strong></td>
+                    <td class="ps-5">${result.my_attendance.toFixed(2)} hrs</td></tr>
+                    <tr><td><strong>Today:</strong></td>
+                    <td class="ps-5"> ${result.hours_today.toFixed(2)} hrs</td></tr>
+                    <tr><td><strong>Ongoing:</strong></td>
+                    <td class="ps-5"> ${result.last_attendance_worked_hours.toFixed(2)} hrs</td></tr>
+                    <tr><td><strong>Overtime:</strong></td>
+                    <td class="ps-5"> ${result.total_overtime.toFixed(2)} hrs</td></tr>
+                    <tr><td><strong>Total Days:</strong></td>
+                    <td class="ps-5"> ${result.total_days_present} Days</td></tr>
                     </table>
                 `;
                 document.getElementById('employeeImage').innerHTML = `
@@ -294,11 +374,16 @@ class Dashboard extends Component {
             if (informationEl) {
                 informationEl.innerHTML = `
                     <table>
-                    <tr><td><strong>Name:</strong></td> <td class="ps-3"> ${result.personal_details.employee_name}</td></tr>
-                    <tr><td><strong>Email:</strong></td> <td class="ps-3"> ${result.personal_details.employee_email}</td></tr>
-                    <tr><td><strong>Phone:</strong></td> <td class="ps-3"> ${result.personal_details.employee_phone}</td></tr>
-                    <tr><td><strong>Department:</strong></td> <td class="ps-3"> ${result.personal_details.employee_department}</td></tr>
-                    <tr><td><strong>Job:</strong></td> <td class="ps-3"> ${result.personal_details.employee_job}</td></tr>
+                    <tr><td><strong>Name:</strong></td>
+                    <td class="ps-3"> ${result.personal_details.employee_name}</td></tr>
+                    <tr><td><strong>Email:</strong></td>
+                    <td class="ps-3"> ${result.personal_details.employee_email}</td></tr>
+                    <tr><td><strong>Phone:</strong></td>
+                    <td class="ps-3"> ${result.personal_details.employee_phone}</td></tr>
+                    <tr><td><strong>Department:</strong></td>
+                    <td class="ps-3"> ${result.personal_details.employee_department}</td></tr>
+                    <tr><td><strong>Job:</strong></td>
+                    <td class="ps-3"> ${result.personal_details.employee_job}</td></tr>
                     </table>
                 `;
             }
@@ -306,9 +391,12 @@ class Dashboard extends Component {
             if (leavesEl) {
                 leavesEl.innerHTML = `
                     <table>
-                    <tr><td><strong>Total Leaves Taken:</strong></td> <td class="ps-5"> ${result.total_leaves_taken.toFixed(1)} days</td></tr>
-                    <tr><td><strong>${filterLabel}:</strong></td> <td class="ps-5"> ${result.leaves_this_month.toFixed(1)} days</td></tr>
-                    <tr><td><strong>Pending Leave Requests:</strong></td> <td class="ps-5"> ${result.pending_leaves_count}</td></tr>
+                    <tr><td><strong>Total Leaves Taken:</strong></td>
+                    <td class="ps-5"> ${result.total_leaves_taken.toFixed(1)} days</td></tr>
+                    <tr><td><strong>${filterLabel}:</strong></td>
+                    <td class="ps-5"> ${result.leaves_this_month.toFixed(1)} days</td></tr>
+                    <tr><td><strong>Pending Leave Requests:</strong></td>
+                    <td class="ps-5"> ${result.pending_leaves_count}</td></tr>
                     </table>
                 `;
             }
@@ -356,10 +444,8 @@ class Dashboard extends Component {
     _createCharts() {
         const result = this.state.data;
         if (!result) return;
-
         this._destroyExistingCharts();
         if (result.employee_hierarchy && result.employee_hierarchy.length > 0) {
-            console.log(result.employee_hierarchy)
             const chartContainer = document.getElementById("employeeHierarchyChart");
             if (chartContainer) {
                 chartContainer.innerHTML = '';
@@ -370,7 +456,6 @@ class Dashboard extends Component {
                             template: "belinda",
                             layout: OrgChart.tree,
                             scaleInitial: 0.6,
-                            mouseScrool: OrgChart.action.zoom,
                             enableDragDrop: false,
                             nodeBinding: {
                                 field_0: "name",
@@ -396,7 +481,6 @@ class Dashboard extends Component {
             console.log("No employee hierarchy data available");
         }
         if (result.is_manager) {
-            console.log(result.employee_hierarchy)
             const attendanceCanvas = document.getElementById("managerAttendanceChart");
             if (attendanceCanvas) {
                 this.chartInstances.managerAttendanceChart = new Chart(attendanceCanvas, {
@@ -622,7 +706,6 @@ class Dashboard extends Component {
         });
     }
 
-
     onClickAttendanceWomen() {
         const startDate = this.state.data.filter_start_date;
         const endDate = this.state.data.filter_end_date;
@@ -635,7 +718,7 @@ class Dashboard extends Component {
 
         this.action.doAction({
             type: 'ir.actions.act_window',
-            name: 'Attendance (Male Employees)',
+            name: 'Attendance (Female Employees)',
             res_model: 'hr.attendance',
             domain: domain,
             views: [[false, 'list'], [false, 'form']],
@@ -684,8 +767,6 @@ class Dashboard extends Component {
         });
     }
 
-
-
     onClickLeaveWomen() {
         const startDate = this.state.data.filter_start_date;
         const endDate = this.state.data.filter_end_date;
@@ -699,7 +780,7 @@ class Dashboard extends Component {
 
         this.action.doAction({
             type: 'ir.actions.act_window',
-            name: 'Leave (Male Employees)',
+            name: 'Leave (Female Employees)',
             res_model: 'hr.leave',
             domain: domain,
             views: [[false, 'list'], [false, 'form']],
